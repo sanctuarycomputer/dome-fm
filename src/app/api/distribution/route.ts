@@ -1,18 +1,11 @@
 import gitCommitInfo from 'git-commit-info';
 import { NextResponse } from 'next/server'
-import { Octokit } from '@octokit/rest'
 
 export async function GET(request: Request) {
-
-  const commits = await new Octokit().rest.repos.listCommits({
-    owner: "sanctuarycomputer",
-    repo: "dome-fm"
-  });
-  
-  const commitInfo = gitCommitInfo();
-  
+  const response = await fetch('https://api.github.com/repos/sanctuarycomputer/dome-fm/git/refs/heads/main');
+  const domeRepoData = await response.json();
   return NextResponse.json({
-    latestDomeSHA: commits.data[0].sha,
-    currentForkSHA: commitInfo.hash
+    latestDomeSHA: domeRepoData.object.sha,
+    currentRepoSHA: gitCommitInfo().hash
   }, { status: 200 });
 }
