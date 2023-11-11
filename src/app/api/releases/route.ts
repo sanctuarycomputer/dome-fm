@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import parseErrorMessage from '@/app/lib/parseErrorMessage';
 
 const prisma = new PrismaClient()
 
@@ -9,13 +10,8 @@ export async function GET(request: Request) {
     const releases = await prisma.release.findMany();
     return NextResponse.json({ data: releases });
   } catch(e) {
-    if (typeof e === "string") {
-      return NextResponse.json({ error: e });
-    } else if (e instanceof Error) {
-        e.message // works, `e` narrowed to Error
-        return NextResponse.json({ error: e.message });
-    } else {
-      return NextResponse.json({ error: "unknown" });
-    }
+    // If error string includes: `Environment variable not found: DATABASE_URL`,
+    // deployment hasn't got a database
+    return NextResponse.json({ error: parseErrorMessage(e) });
   }
 }
