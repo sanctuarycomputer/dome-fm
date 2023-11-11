@@ -1,9 +1,16 @@
 -- CreateTable
 CREATE TABLE "User" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Release" (
+    "id" TEXT NOT NULL,
+
+    CONSTRAINT "Release_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
