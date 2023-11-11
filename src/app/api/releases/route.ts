@@ -10,7 +10,7 @@ export async function GET(request: Request) {
     const releases = await prisma.release.findMany();
     return NextResponse.json({ data: releases });
   } catch(e) {
-    // If error string includes: `Environment variable not found: DATABASE_URL`,
+    // If error string includes: `Environment variable not found: POSTGRES_URL`,
     // deployment hasn't got a database
     return NextResponse.json({ error: parseErrorMessage(e) });
   }
