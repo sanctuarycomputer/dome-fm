@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 const gitInfo = gitCommitInfo();
 
-export const revalidate = 0;
+export const revalidate = 3600;
 export async function GET(request: Request) {
   const response = await fetch('https://api.github.com/repos/sanctuarycomputer/dome-fm/git/refs/heads/main', {
     cache: 'no-store'
