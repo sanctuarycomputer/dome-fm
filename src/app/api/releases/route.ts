@@ -12,6 +12,9 @@ export async function GET(request: Request) {
   } catch(e) {
     // If error string includes: `Environment variable not found: POSTGRES_URL`,
     // deployment hasn't got a database
+
+    // If error string includes: `does not exist in the current database.`
+    // Migration hasn't run
     return NextResponse.json({ error: parseErrorMessage(e) });
   }
 }
