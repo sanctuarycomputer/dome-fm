@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   
   return NextResponse.json({
     latestDomeSHA: (await response.json()).object.sha,
-    currentRepoSHA: gitInfo.hash
+    currentRepoSHA: process.env.VERCEL_GIT_COMMIT_SHA || gitInfo.hash
   }, { 
     status: 200,
   });
