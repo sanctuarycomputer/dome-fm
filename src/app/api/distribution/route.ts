@@ -5,6 +5,7 @@ export async function GET(request: Request) {
   const response = await fetch('https://api.github.com/repos/sanctuarycomputer/dome-fm/git/refs/heads/main', {
     cache: 'no-store'
   });
+  
   const domeRepoData = await response.json();
   return NextResponse.json({
     latestDomeSHA: domeRepoData.object.sha,
