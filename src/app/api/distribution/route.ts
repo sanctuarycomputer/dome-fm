@@ -7,5 +7,12 @@ export async function GET(request: Request) {
   return NextResponse.json({
     latestDomeSHA: domeRepoData.object.sha,
     currentRepoSHA: gitCommitInfo().hash
-  }, { status: 200 });
+  }, { 
+    status: 200,
+    headers: {
+      'Cache-Control': 'public, s-maxage=1',
+      'CDN-Cache-Control': 'public, s-maxage=1',
+      'Vercel-CDN-Cache-Control': 'public, s-maxage=1',
+    },
+  });
 }
