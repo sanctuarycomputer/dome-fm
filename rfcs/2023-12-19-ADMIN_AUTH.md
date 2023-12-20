@@ -104,7 +104,7 @@ dashboard, already logged in
 
 #### Cons
 - Lots of friction (this part of google's backend is confusing and always changing)
-- Requires that the administrator already has a Gmail account
+- Requires that the administrator already has a Gmail account (with 2FA enabled)
 - Sometimes gmail's SMTP can have problems reliably sending emails
 
 ### Via Stripe oAuth 2.0
