@@ -236,7 +236,7 @@ to power things like central artist discovery & a future iOS / Android app.
 
 ### Use Gmail's SMTP
 
-In this scenario, we as the administrator to setup a ["google app password"](https://www.febooti.com/products/automation-workshop/tutorials/enable-google-app-passwords-for-smtp.html)
+In this scenario, we ask the administrator to setup a ["google app password"](https://www.febooti.com/products/automation-workshop/tutorials/enable-google-app-passwords-for-smtp.html)
 
 0. Adminstrator navigates to `https://artistname.vercel.app/initial-setup` wizard
 1. Administrator is instructed to setup a "google app password" via their Gmail account
@@ -253,7 +253,7 @@ dashboard, already logged in
 
 #### Cons
 - Lots of friction (this part of google's backend is confusing and always changing)
-- Requires that the administrator already has a Gmail account
+- Requires that the administrator already has a Gmail account (with 2FA enabled)
 - Sometimes gmail's SMTP can have problems reliably sending emails
 
 ### Via Stripe oAuth 2.0
