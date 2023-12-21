@@ -1,4 +1,153 @@
-# Admin Authentication
+# Admin Authentication Rev.2
+
+Feature Name: Admin Authentication
+
+Proposal Date: 2023-12-20
+
+Author: Hugh Francis
+
+## Description
+
+**Note:** See below for Rev.1 to understand the full decision matrix that led to this revision.
+
+Rev.2 describes an approach to authentication that uses what we're preliminarily calling the
+"Mothership API". This is a central API that dome.fm instances register their presence with,
+and periodically backup their state to.
+
+Another advantage of the dome.fm Mothership API is that it will house SMTP credentials, so 
+that dome.fm instances do not need to BYO their own SMTP (albeit in the future this will be 
+configurable in the case the adminstrator would prefer that soverignty).
+
+## Why Next.js for Mothership API?
+
+In a new codebase `github.com/dome.fm/mothership`, we'll setup a Next.js app. 
+
+Why Next.js for an API? Well, for a few tactical reasons:
+- This app will likely live at `developers.dome.fm`, and we may want to render HTML there (think
+API documentation).
+- Dome.fm will be a Next.js app, so this team will already have that proficiency.
+- The Mothership API needs to be highly available, so serverless Vercel deployment is a great
+option. Next.js & Vercel play super nice.
+
+## How Dome.fm instances will register themselves
+
+1. In a [Next.js Middleware](https://nextjs.org/docs/app/building-your-application/routing/middleware), 
+we'll ask the Dome.fm instance if it's registered itself (we'll likely check the PostgresQL 
+database for a `MothershipAPIKey`, ie `const hasMothershipAPIKey = !!(await prisma.mothershipAPIKey.findMany())[0]`)
+
+2. If `false`, we'll `POST https://developers.dome.fm/instance-api/[...domeInstanceVersion]/instances` with a body
+like:
+
+```
+{
+  owner: "hughfrancis89@gmail.com"
+}
+```
+
+3. The Mothership API will return a response like:
+
+```
+{
+  instanceId: "some-uuid-generated-by-mothership",
+  mothershipAPIKey: "some-secret-key-generated-by-mothership"
+}
+```
+
+4. The Dome.fm instance will save the returned `MothershipAPIKey` in PostgresQL and continue into 
+request stack.
+
+## How Dome.fm instances will trigger Auth Emails
+
+**Note:** Rather than providing an open SMTP server for the instance to authenticate and
+connect to, we'll offer an API that triggers a pre-formatted authentication email (rather 
+than an open SMTP server which could be more widely abused).
+
+1. The Dome.fm instance can now trigger an authentication email by calling `POST https://developers.dome.fm/instance-api/[...domeInstanceVersion]/admin-magic-links` with the following body parameters:
+
+```
+{
+  token: "some-uuid-generated-by-instance",
+  email: "hughfrancis89@gmail.com"
+}
+```
+
+...and the following headers:
+```
+X-DOME-INSTANCE-ID: "some-uuid-generated-by-mothership"
+X-DOME-MOTHERSHIP-API-KEY: "some-secret-key-generated-by-mothership"
+X-DOME-HOSTNAME: "artistname.vercel.app"
+X-DOME-REQUEST-ID: "some-uuid-generated-by-instance"
+```
+
+2. Before triggering the email, the Mothership API will check the rate limiter, to ensure that this
+Dome.fm instance is sending `less than or equal to 5 emails per minute` (more below).
+
+3. Before triggering the email, the Mothership API will perform an authenticity handshake (more below).
+
+4. Before triggering the email, the Mothership API will test that the recipient email is a known
+owner or administrator of the Dome.fm instance.
+
+5. If all security checks pass, the email will be sent, with a body like:
+
+```
+<a href="https://developers.dome.fm/admin/authenticate?token=[token]&instance=[X-DOME-HOSTNAME]">Login to Dome.fm</a>
+```
+
+**Note:** Wait, why does this email body return to `developers.dome.fm` and not `X-DOME-HOSTNAME`?
+
+Well, because we need to know about the existence of our decentralized admin users in the Mothership API
+as a security precaution, we also need to know that they didn't enter their email addresses incorrectly.
+
+So, we "proxy" the magic link completion step through the Mothership API (which simply "confirms" the email
+address in the Mothership database) and then redirects to `X-DOME-HOSTNAME` for the Instance to actually
+issue a valid session.
+
+Ie, this allows a single magic link to be "double confirmable" in both the Mothership AND the Instance,
+and in the future, allows us to issue a `*.dome.fm` cookie for a universal web player and unified login
+experience!
+
+## How security will work
+
+Technically, anyone on the internet can register for a Mothership API key (and thus send emails). So,
+here's a few security approaches we'll take to ensure malicious users can't gain access to an instance
+admin panel.
+
+### Handshaking
+
+Every request to the Mothership API will include a handshake:
+
+1. `artistname.vercel.app` will make some request to `developers.dome.fm/instance-api/...`
+2. That request must include `X-DOME-HOSTNAME: "artistname.vercel.app"` and `X-DOME-REQUEST-ID: "some-uuid-generated-by-instance"` (which will be stored in PostgresQL for ~60 minutes)
+3. `developers.dome.fm` will return a request to `artistname.vercel.app/api/authenticity-handshake?requestId=some-uuid-generated-by-instance`
+4. If the requestId is found in the Instance PostgresQL database, it will return a bodyless `204` response
+5. Upon receiving that `204`, the request will be allowed to proceed further into the stack. (If not the
+request stack will be halted)
+
+### API Keys
+
+1. The request will include headers `X-DOME-INSTANCE-ID` and `X-DOME-MOTHERSHIP-API-KEY`,
+which will be checked for a match in the Mothership PostgresQL instance.
+
+### Rate Limiting
+
+1. The request will be rate limited against the referrer IP address.
+
+### Testing Recipients
+
+On registration, we'll record the instance owner email address in the Mothership API. (This
+is necessary for security alerts in the future).
+
+In order to ensure we only send magic link emails to the appropriate instance admins (and not
+a malicious user), we'll check that the `email` field given is actually a known admin by the
+Mothership API.
+
+**Note:** This adds some annoying complexity: when managing admins / owners, we'll need
+to synchronize those changes to the Mothership API. Still, this is a good practice for the
+overall security of the system.
+
+---
+
+# Admin Authentication Rev.1
 
 Feature Name: Admin Authentication
 
